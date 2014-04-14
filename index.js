@@ -3,6 +3,7 @@
 var EventEmitter = require('events').EventEmitter
   , Configuration = require('./lib/configuration')
   , Orchestrator = require('./lib/orchestrator')
+  , deepExtend = require('deep-extend')
   , format = require('util').format
   , net = require('net')
   , dsv = require('dsv')
@@ -44,6 +45,9 @@ function HAProxy(socket, options) {
 
   options = options || {};
 
+  // Extend options with defaults.
+  options = deepExtend( HAProxy.getDefaults(), options );
+
   //
   // Allow variable arguments, with socket path or just custom options.
   //
@@ -52,8 +56,8 @@ function HAProxy(socket, options) {
     socket = options.socket || null;
   }
 
-  this.socket = socket || '/tmp/haproxy.sock';                // Path to socket
-  this.cfg = options.config || '/etc/haproxy/haproxy.cfg'; // Config location
+  this.socket   = socket          || '/tmp/haproxy.sock';           // Path to socket
+  this.cfg      = options.config  || '/etc/haproxy/haproxy.cfg';    // Config location
 
   //
   // Create a new `haproxy` orchestrator which interacts with the binary.
@@ -217,6 +221,10 @@ HAProxy.prototype.parse = function parse(using, buffer, fn, command) {
       //
       if ('object' === using) {
         var kv = line.split(':');
+
+        if( 'string' != typeof kv[1] ) {
+          kv[1] = '';
+        }
 
         kv[1] = kv[1].trim();
         data[kv[0]] = !isNaN(+kv[1]) ? +kv[1] : kv[1];
@@ -496,6 +504,8 @@ HAProxy.prototype.save = HAProxy.prototype.write = function save(path, fn) {
   if (method in HAProxy.prototype) throw new Error('HAProxy#'+ method +' is duplicate');
 
   HAProxy.prototype[method] = function proxy() {
+    HAProxy.debug( method );
+
     var args = slice.call(arguments, 0)
       , self = this
       , fn = noop;
@@ -554,6 +564,34 @@ Object.defineProperties( module.exports = HAProxy, {
     value: function create( socket, options ) {
       return new HAProxy( socket, options )
     },
+    enumerable: true,
+    configurable: true,
+    writable: true
+  },
+  setDeafults: {
+    value: function setDeafults( config ) {
+      return HAProxy.__defaults = config;
+    },
+    enumerable: true,
+    configurable: true,
+    writable: true
+  },
+  getDefaults: {
+    value: function getDefaults( config ) {
+      return HAProxy.__defaults || {};
+    },
+    enumerable: true,
+    configurable: true,
+    writable: true
+  },
+  version: {
+    value: require( './package.json' ).version,
+    enumerable: true,
+    configurable: true,
+    writable: true
+  },
+  debug: {
+    value: require( 'debug' )( 'haproxy' ),
     enumerable: true,
     configurable: true,
     writable: true
