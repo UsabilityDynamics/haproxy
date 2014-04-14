@@ -542,4 +542,20 @@ HAProxy.prototype.save = HAProxy.prototype.write = function save(path, fn) {
 //
 // Expose the module.
 //
-module.exports = HAProxy;
+Object.defineProperties( module.exports = HAProxy, {
+  create: {
+    /**
+     * Create Instance.
+     *
+     * @param socket
+     * @param options
+     * @returns {HAProxy}
+     */
+    value: function create( socket, options ) {
+      return new HAProxy( socket, options )
+    },
+    enumerable: true,
+    configurable: true,
+    writable: true
+  }
+});
